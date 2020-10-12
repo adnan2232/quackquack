@@ -1,0 +1,65 @@
+{%extends 'core/base.html' %}
+{%block content  %}
+{%load humanize  %}
+<div class="container" >
+    <div class="columns">
+        <div class="column is-12">
+            <h1 class='title'>
+                Search
+            </h1>
+            <p> Search term : {{query}}</p>
+            <hr>
+            <form method="GET" action= "{%url 'search' %}">
+                <div class="field">
+                    <div class="control">
+                        <input type="text" class="input" name="query" value={{query}}>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-success"> Search</button>
+                    </div>
+                </div>
+            </form>
+            <hr>
+            <div class="search-results">
+                {%if not  quackers and not quacks %}
+                    <strong>No search result match quack-quack</strong>
+                {% endif %}
+                {% if quackers%}
+                    <strong>Quackers</strong>
+                {%  endif %}
+                {%for quacker in quackers %}
+                    <p><a href="{%url 'quackerprofile' quacker.username%}">{{quacker.username}}</a></p>
+                {%endfor%}
+                {% if quacks%}
+                    <strong>Quacks</strong>
+                {% endif %}
+                <div class="wrapper-quacks">
+                    {% for quack in quacks%}
+                    <article class="media">
+                        <figure class="media-left">
+                            <p class="image is-64x64">
+                                {% if quack.created_by.quackerprofile.avatar %}
+                                    <img src="{{quack.created_by.quackerprofile.avatar.url}}">
+                                {% endif %}
+                            </p>
+                        </figure>
+                        <div class="media-content">
+                            <div class="content">
+                                <p>
+                                    <strong><a href="{%url 'quackerprofile' quack.created_by.username%}">{{quack.created_by.username}}</a></strong>
+                                    <small>{{quack.created_at|naturaltime}}</small>
+                                    <br>
+                                {{quack.body}}
+                                </p>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

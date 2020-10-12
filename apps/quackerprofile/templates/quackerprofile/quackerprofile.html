@@ -1,0 +1,107 @@
+{%extends 'core/base.html' %}
+{%load humanize %}
+{%block content %}
+<div class="container" id="quackerprofileapp">
+    <div class="columns">
+        <div class='column is-12'>
+            <h1 class="title"> {{user.username}}</h1>
+            {% if user.quackerprofile.avatar %}
+                <figure class="image is-128x128">
+                    <img src="{{user.quackerprofile.avatar.url}}">
+                </figure>
+            {%endif%}
+            <hr>
+            <p><a href="{%url 'followers' user.username %}">Followers: {{user.quackerprofile.followed_by.count}}</a></p>
+            <p><a href="{%url 'follows' user.username %}">Follows: {{user.quackerprofile.follows.count}}</a></p>
+            {% if user != request.user %}
+                <a href="{%url 'conversation' user.id%}" class="button is-info">Send Message </a>
+                {% if request.user.quackerprofile in user.quackerprofile.followed_by.all %}
+                    <a href="{%url 'unfollow_quacker' user.username %}"  class="button is-success">
+                        Unfollow
+                    </a>
+                {% else %}
+                    <a href="{%url 'follow_quacker' user.username %}"  class="button is-success">
+                        Follow
+                    </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="columns">
+        <div class="column is-8">
+            <div class="wrapper-quacks">
+                
+                {%for quack in qquacks %}
+                
+                    <div class='quack'>
+                        <article class="media">
+                            <figure class="media-left">
+                                <p class="image is-64x64">
+                                    {% if user.quackerprofile.avatar %}
+                                        <img src="{{user.quackerprofile.avatar.url}}">
+                                    {% endif %}
+                                </p>
+                            </figure>
+                            <div class="media-content">
+                                <div class="content">
+                                    <p>
+                                        <strong>{{quack.created_by.username}}</strong>
+                                        <small>{{quack.created_at}}</small>
+                                        <br>
+                                        {{quack.body}}
+                                        <br>
+                                        <a @click="likeQuack({{quack.id}})" v-if="!liked_quacks.includes({{quack.id}})">Like</a>
+                                        <span v-if="liked_quacks.includes({{quack.id}})">Liked</span> 
+                                        <small id='likes-{{quack.id}}' >{{quack.likes.count}} likes</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}
+{%block script%}
+<script>
+    new Vue({
+        el: '#quackerprofileapp',
+        delimiters: ['[[',']]'],
+        data(){
+            return{
+                liked_quacks: [{%for quack in qquacks %}{%if quack.liked %}{{quack.id}},{%endif%}{%endfor%}]
+            }
+        },
+        methods:{
+            likeQuack(quack_id){
+                this.liked_quacks.push(parseInt(quack_id));
+                var quack = {
+                    'quack_id':quack_id
+                };
+                fetch('/api/add_like/',{
+                    method:'POST',
+                    headers:{
+                        'Content-Type':'application/json',
+                        'X-CSRFToken': '{{csrf_token}}'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(quack)
+                })
+                .then((response)=>{
+                    console.log(response);
+                })
+                .catch((error)=>{
+                    console.log(error);
+                });
+                const el = document.getElementById('likes-'+quack_id);
+                const likes =parseInt(el.innerHTML.split(' ')[0]+1);
+                el.innerHTML = likes+'likes';
+            }
+        }
+    })
+</script>
+
+{% endblock %}

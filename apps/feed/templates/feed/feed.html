@@ -1,0 +1,146 @@
+{%extends 'core/base.html' %}
+{%block content  %}
+{%load humanize  %}
+<div class="container" id="feedapp">
+    <div class="columns">
+        <div class="column is-12">
+            <div class="wrapper-form">
+                <form v-on:submit.prevent="submitQuack()">
+                    <div class="field">
+                        <div class="control">
+                            <textarea class="textarea" v-model="body" placeholder="If its walk like a duck,quack like a duck then it is a duck ">
+                            </textarea>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="control">
+                            <button class="button is-submit">Submit</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="wrapper-quacks">
+                <div class="quack" v-for="quack in quacks">
+                    <article class="media">
+                        <figure class="media-left">
+                            <p class="image is-64x64">
+                                    <img :src="quack.avatar">
+                            </p>
+                        </figure>
+                        <div class="media-content">
+                            <div class="content">
+                                <p>
+                                    <strong>[[quack.quacker]]</strong>
+                                    <small>[[quack.created_at|naturaltime]]</small>
+                                    <br>
+                                    [[quack.body]]
+                                </p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                {% for quack in quacks%}
+                <article class="media">
+                    <figure class="media-left">
+                        <p class="image is-64x64">
+                            {% if quack.created_by.quackerprofile.avatar %}
+                                <img src="{{quack.created_by.quackerprofile.avatar.url}}">
+                            {% endif %}
+                        </p>
+                    </figure>
+                    <div class="media-content">
+                        <div class="content">
+                            <p>
+                                <strong><a href="{%url 'quackerprofile' quack.created_by.username%}">{{quack.created_by.username}}</a></strong>
+                                <small>{{quack.created_at|naturaltime}}</small>
+                                <br>
+                                {{quack.body}}
+                                <br>
+                                <a @click="likeQuack({{quack.id}})" v-if="!liked_quacks.includes({{quack.id}})">Like</a>
+                                <span v-if="liked_quacks.includes({{quack.id}})">Liked</span> 
+                                <small id='likes-{{quack.id}}' >{{quack.likes.count}} likes</small>
+                            </p>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}
+{%block script%}
+<script>
+    new Vue({
+        el: '#feedapp',
+        delimiters: ['[[',']]'],
+        data(){
+            return{
+                quacks: [],
+                body: '',
+                quacker: '{{request.user.username}}',
+                created_at: 'Now',
+                avatar: '{% if request.user.quackerprofile.avatar %}{{ request.user.quackerprofile.avatar.url}}{% endif %}',
+                liked_quacks: [{%for quack in quacks %}{%if quack.liked %}{{quack.id}},{%endif%}{%endfor%}]
+            }
+        },
+        methods:{
+            likeQuack(quack_id){
+                this.liked_quacks.push(parseInt(quack_id));
+                var quack = {
+                    'quack_id':quack_id
+                };
+                fetch('/api/add_like/',{
+                    method:'POST',
+                    headers:{
+                        'Content-Type':'application/json',
+                        'X-CSRFToken': '{{csrf_token}}'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(quack)
+                })
+                .then((response)=>{
+                    console.log(response);
+                })
+                .catch((error)=>{
+                    console.log(error);
+                });
+                const el = document.getElementById('likes-'+quack_id);
+                const likes =parseInt(el.innerHTML.split(' ')[0]+1);
+                el.innerHTML = likes+'likes';
+            },
+            submitQuack(){
+                console.log('submitQuack');
+                if(this.body.length>0){
+                    var quack={
+                        'body':this.body,
+                        'quacker':this.quacker,
+                        'created_at':this.created_at,
+                        'avatar': this.avatar
+                    };
+                    this.quacks.unshift(quack);
+                    //send backend
+                    fetch('/api/add_quack/',{
+                        method:'POST',
+                        headers:{
+                            'Content-Type':'application/json',
+                            'X-CSRFToken': '{{csrf_token}}'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(quack)
+                    })
+                    .then((response)=>{
+                        console.log(response);
+                    })
+                    .catch((error)=>{
+                        console.log(error);
+                    });
+                
+                }
+                this.body="";
+            }
+        }
+    })
+</script>
+
+{% endblock %}

@@ -1,0 +1,25 @@
+{%extends 'core/base.html' %}
+{%load humanize %}
+{%block content %}
+<div class="container">
+    <div class="columns">
+        <div class='column is-12'>
+            <h1 class="title">Followers- {{user.username}}</h1>
+            <p>Num: {{user.quackerprofile.followed_by.count}}</p>
+        </div>
+    </div>
+    <div class="columns">
+        <div class= "column is-8">
+            {%for quacker in user.quackerprofile.followed_by.all %}
+                <p><a href="{%url 'quackerprofile' quacker.user.username%}"  > {{quacker.user.username}}</a></p>
+                {% empty%}
+                    {% if request.user == user %}
+                        <p> You don't have any follower </p>
+                    {%else %}
+                        <p> {{user.username}} doesn't have any follower</p>
+                    {%endif%}
+            {%endfor %}
+        </div> 
+    </div>
+</div>
+{% endblock %}
